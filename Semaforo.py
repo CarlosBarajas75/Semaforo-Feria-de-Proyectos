@@ -263,8 +263,10 @@ def abrir_ventana_visual():
     global ventana_visual, semaforo_canvas, barra_canvas, luz_verde, luz_amarilla, luz_roja, barra_rect, etapa_label
     ventana_visual = Toplevel(root)
     ventana_visual.title("Visualizador de Tiempo")
-    ventana_visual.attributes('-fullscreen', True)
+    ventana_visual.geometry("900x700")  # Tamaño inicial más grande
+    ventana_visual.minsize(600, 400)    # Tamaño mínimo
     ventana_visual.configure(bg=COLORS['bg_primary'])
+    ventana_visual.resizable(True, True)  # Permitir expandir/minimizar
 
     # Frame superior con gradiente
     frame_superior = tk.Frame(ventana_visual, bg=COLORS['bg_primary'])
@@ -311,94 +313,78 @@ def abrir_ventana_visual():
         semaforo_canvas.delete("all")
         w = semaforo_canvas.winfo_width()
         h = semaforo_canvas.winfo_height()
-        radio = int(min(w, h) * 0.08)
+        radio = int(min(w, h) * 0.10)
         offset_y = int(h * 0.15)
         espacio = int(radio * 2.2)
 
-        # Calcular posiciones para tres semáforos
-        separacion_semaforos = radio * 6
-        posiciones_x = [
-            w // 2 - separacion_semaforos,
-            w // 2,
-            w // 2 + separacion_semaforos
-        ]
-        
+        # Solo un semáforo en el centro
+        cx = w // 2
         # Limpiar las listas antes de crear nuevas luces
         luces_verdes = []
         luces_amarillas = []
         luces_rojas = []
-        
-        # Dibujar los tres semáforos
-        for cx in posiciones_x:
-            # Carcasa del semáforo
-            carcasa_width = radio * 3
-            carcasa_height = espacio * 3 + radio * 2
-            
-            # Agregar soporte metálico
-            soporte_width = radio * 0.5
-            semaforo_canvas.create_rectangle(
-                cx - soporte_width//2,
-                offset_y - radio - 20,
-                cx + soporte_width//2,
-                offset_y - radio,
-                fill='#95a5a6',
-                width=1,
-                outline='#7f8c8d'
-            )
-            
-            # Carcasa principal
-            semaforo_canvas.create_rectangle(
+
+        # Carcasa del semáforo
+        carcasa_width = radio * 3
+        carcasa_height = espacio * 3 + radio * 2
+        soporte_width = radio * 0.5
+        semaforo_canvas.create_rectangle(
+            cx - soporte_width//2,
+            offset_y - radio - 20,
+            cx + soporte_width//2,
+            offset_y - radio,
+            fill='#95a5a6',
+            width=1,
+            outline='#7f8c8d'
+        )
+        semaforo_canvas.create_rectangle(
+            cx - carcasa_width//2,
+            offset_y - radio,
+            cx + carcasa_width//2,
+            offset_y + carcasa_height,
+            fill=COLORS['bg_secondary'],
+            width=2,
+            outline=COLORS['text_primary']
+        )
+        for i in range(3):
+            y_pos = offset_y + i * espacio + radio
+            semaforo_canvas.create_line(
                 cx - carcasa_width//2,
-                offset_y - radio,
+                y_pos - radio - 5,
                 cx + carcasa_width//2,
-                offset_y + carcasa_height,
-                fill=COLORS['bg_secondary'],
-                width=2,
-                outline=COLORS['text_primary']
+                y_pos - radio - 5,
+                fill='#95a5a6',
+                width=1
             )
-            
-            # Agregar detalles metálicos
-            for i in range(3):
-                y_pos = offset_y + i * espacio + radio
-                semaforo_canvas.create_line(
-                    cx - carcasa_width//2,
-                    y_pos - radio - 5,
-                    cx + carcasa_width//2,
-                    y_pos - radio - 5,
-                    fill='#95a5a6',
-                    width=1
-                )
-            
-            # Crear luces para cada semáforo
-            luz_verde = LuzSemaforo(
-                semaforo_canvas,
-                cx,
-                offset_y + radio,
-                radio,
-                "#333333",
-                COLORS['accent_green']
-            )
-            luces_verdes.append(luz_verde)
-            
-            luz_amarilla = LuzSemaforo(
-                semaforo_canvas,
-                cx,
-                offset_y + espacio + radio,
-                radio,
-                "#333333",
-                COLORS['accent_yellow']
-            )
-            luces_amarillas.append(luz_amarilla)
-            
-            luz_roja = LuzSemaforo(
-                semaforo_canvas,
-                cx,
-                offset_y + 2*espacio + radio,
-                radio,
-                "#333333",
-                COLORS['accent_red']
-            )
-            luces_rojas.append(luz_roja)
+
+        # Crear luces para el semáforo central
+        luz_verde = LuzSemaforo(
+            semaforo_canvas,
+            cx,
+            offset_y + radio,
+            radio,
+            "#333333",
+            COLORS['accent_green']
+        )
+        luces_verdes.append(luz_verde)
+        luz_amarilla = LuzSemaforo(
+            semaforo_canvas,
+            cx,
+            offset_y + espacio + radio,
+            radio,
+            "#333333",
+            COLORS['accent_yellow']
+        )
+        luces_amarillas.append(luz_amarilla)
+        luz_roja = LuzSemaforo(
+            semaforo_canvas,
+            cx,
+            offset_y + 2*espacio + radio,
+            radio,
+            "#333333",
+            COLORS['accent_red']
+        )
+        luces_rojas.append(luz_roja)
 
     ventana_visual.bind("<Configure>", dibujar_semaforo)
     dibujar_semaforo()
