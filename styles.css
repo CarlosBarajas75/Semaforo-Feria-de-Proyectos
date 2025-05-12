@@ -1,0 +1,22 @@
+.root {
+    background-color: #2C3E50;
+}
+
+.button {
+    background-color: #3498DB;
+    color: #ECF0F1;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.button:hover {
+    background-color: #2980B9;
+    transform: scale(1.05);
+}
+
+.entry {
+    background-color: #34495E;
+    color: #ECF0F1;
+    border-radius: 3px;
+    border: 1px solid #3498DB;
+} 
