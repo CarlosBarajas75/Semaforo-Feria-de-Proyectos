@@ -331,6 +331,28 @@ def abrir_ventana_visual():
                                            relief='raised', bd=3, command=iniciar_temporizador)
     boton_iniciar_temporizador.pack(anchor='w', pady=(30, 0))
 
+    try:
+        banner_image = tk.PhotoImage(file="fpi-round-white.png")
+        
+        original_width = banner_image.width()
+        original_height = banner_image.height()
+        
+        scale_x = original_width / 300
+        scale_y = original_height / 300
+        
+        if scale_x > 1 or scale_y > 1:
+            banner_image = banner_image.subsample(int(scale_x), int(scale_y))
+        else:
+            banner_image = banner_image.zoom(int(1/scale_x), int(1/scale_y))
+        
+        banner_label = tk.Label(frame_textos, image=banner_image, bg=COLORS['bg_primary'])
+        banner_label.image = banner_image
+        banner_label.pack(anchor='w', pady=(20, 0))
+        
+    except Exception as e:
+        print(f"Error al cargar la imagen del banner: {e}")
+
+
     frame_semaforo = tk.Frame(frame_horizontal, bg=COLORS['bg_primary'])
     frame_semaforo.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
