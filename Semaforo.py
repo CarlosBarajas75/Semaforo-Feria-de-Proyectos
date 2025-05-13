@@ -39,18 +39,19 @@ boton_iniciar_temporizador = None
 
 # Al inicio del archivo, después de los imports
 COLORS = {
-    'bg_primary': '#1E272E',      # Gris muy oscuro para el fondo principal
-    'bg_secondary': '#2C3A47',    # Gris oscuro para elementos secundarios
-    'text_primary': '#FFFFFF',    # Blanco puro para mejor contraste
-    'accent_green': '#2ECC71',    # Verde brillante
-    'accent_yellow': '#F1C40F',   # Amarillo brillante
-    'accent_red': '#E74C3C',      # Rojo brillante
-    'button_bg': '#34495E',       # Cambiar el color de fondo del botón a más oscuro
-    'button_hover': '#2C3E50',    # Color hover más oscuro
-    'entry_bg': '#34495E',        # Fondo para campos de entrada
-    'button_text': '#FFFFFF',     # Texto blanco para botones
-    'border_color': '#5D6D7E'     # Color para bordes
+    'bg_primary': '#1e1e2f',        # Azul-gris oscuro
+    'bg_secondary': '#2b2b3c',      # Para marcos y elementos secundarios
+    'text_primary': '#E0E0E0',      # Gris claro (mejor que blanco puro)
+    'accent_green': '#00c896',      # Verde menta
+    'accent_yellow': '#f1c40f',     # Amarillo vibrante
+    'accent_red': '#ff4c4c',        # Rojo brillante
+    'button_bg': '#3a3a4f',         # Botón más claro
+    'button_hover': '#505065',      # Hover más suave
+    'entry_bg': '#3a3a4f',          # Campo de texto
+    'button_text': '#FFFFFF',
+    'border_color': '#5D6D7E'
 }
+
 
 # --- Funciones principales ---
 def start_timer():
@@ -136,13 +137,13 @@ def crear_boton_personalizado(parent, texto, comando):
     btn = tk.Button(
         parent,
         text=texto,
-        font=('Helvetica', 14, 'bold'),
+        font=('Segoe UI', 14, 'bold'),
         bg=COLORS['button_bg'],
         fg=COLORS['text_primary'],
         activebackground=COLORS['button_hover'],
         activeforeground=COLORS['text_primary'],
-        relief='solid',
-        bd=1,
+        relief='flat',
+        bd=0,
         padx=20,
         pady=10,
         command=comando
@@ -284,38 +285,39 @@ def abrir_ventana_visual():
     frame_horizontal.pack(fill=tk.BOTH, expand=True)
 
     frame_textos = tk.Frame(frame_horizontal, bg=COLORS['bg_primary'])
-    frame_textos.pack(side=tk.LEFT, fill=tk.Y, padx=(40, 0), pady=40)
+    frame_textos.pack(side=tk.LEFT, fill='both', expand=True, padx=(40, 0), pady=40)
+
 
     evento_label = tk.Label(frame_textos,
                             text=f"Evento: {current_subject}",
-                            font=("Helvetica", 28, "bold"),
+                            font=("Segoe UI", 28, "bold"),
                             bg=COLORS['bg_primary'],
                             fg=COLORS['accent_yellow'],
-                            anchor='w', justify='left')
+                            anchor='center', justify='center')
     evento_label.pack(anchor='w', pady=(10, 0))
 
     equipo_label = tk.Label(frame_textos, 
                            text=f"ID-Proyecto: {current_team}",
-                           font=("Helvetica", 24, "bold"),
+                           font=("Segoe UI", 24, "bold"),
                            bg=COLORS['bg_primary'],
                            fg=COLORS['text_primary'],
-                           anchor='w', justify='left')
+                           anchor='center', justify='center')
     equipo_label.pack(anchor='w', pady=(10, 0))
 
     tema_equipo_label = tk.Label(frame_textos,
                                  text=f"Título: {tema_equipo}",
-                                 font=("Helvetica", 20),
+                                 font=("Segoe UI", 20),
                                  bg=COLORS['bg_primary'],
                                  fg=COLORS['text_primary'],
-                                 anchor='w', justify='left')
+                                 anchor='center', justify='center')
     tema_equipo_label.pack(anchor='w', pady=(0, 10))
 
     etapa_label = tk.Label(frame_textos,
                           text="EXPOSICIÓN",
-                          font=("Helvetica", 36, "bold"),
+                          font=("Segoe UI", 36, "bold"),
                           bg=COLORS['bg_primary'],
                           fg=COLORS['accent_green'],
-                          anchor='w', justify='left')
+                          anchor='center', justify='center')
     etapa_label.pack(anchor='w', pady=10)
 
     # Botón para iniciar el temporizador
@@ -325,7 +327,7 @@ def abrir_ventana_visual():
             running = True
             boton_iniciar_temporizador.config(state='disabled')
             countdown()
-    boton_iniciar_temporizador = tk.Button(frame_textos, text="INICIAR TEMPORIZADOR", font=("Helvetica", 18, "bold"),
+    boton_iniciar_temporizador = tk.Button(frame_textos, text="INICIAR TEMPORIZADOR", font=("Segoe UI", 18, "bold"),
                                            bg=COLORS['accent_green'], fg=COLORS['bg_primary'],
                                            activebackground=COLORS['accent_yellow'],
                                            relief='raised', bd=3, command=iniciar_temporizador)
@@ -358,13 +360,13 @@ def abrir_ventana_visual():
 
     semaforo_canvas = tk.Canvas(frame_semaforo, 
                               bg=COLORS['bg_primary'], 
-                              highlightthickness=0)
+                              highlightthickness=0, borderwidth=0)
     semaforo_canvas.pack(expand=True, fill=tk.BOTH)
 
     barra_canvas = tk.Canvas(ventana_visual, 
                            height=10,
                            bg=COLORS['bg_secondary'],
-                           highlightthickness=0)
+                           highlightthickness=0, borderwidth=0)
     barra_canvas.pack(fill=tk.X, side=tk.BOTTOM, pady=20)
     barra_rect = barra_canvas.create_rectangle(0, 0, 0, 10, 
                                              fill=COLORS['accent_green'],
@@ -1071,16 +1073,16 @@ def crear_interfaz_principal():
     global start_button, reset_button, historial_button, subject_menu, team_entry, tema_entry
 
     # Frame superior para evento y equipo
-    frame_top = tk.Frame(root, bg=COLORS['bg_primary'])
+    frame_top = tk.Frame(root, bg=COLORS['bg_primary'], padx=20, pady=10)
     frame_top.pack(pady=10)
 
     # Cambiar 'Materia' por 'Evento' y actualizar opciones
-    tk.Label(frame_top, text="Evento:", font=("Helvetica", 14), 
+    tk.Label(frame_top, text="Evento:", font=("Segoe UI", 14), 
             bg=COLORS['bg_primary'], fg=COLORS['text_primary']).grid(row=0, column=0, padx=5, pady=5)
     
     subject_menu = tk.OptionMenu(frame_top, subject_var, "Informe de proyectos de investigación", "Protocolo de proyectos de investigación")
     subject_menu.config(
-        font=("Helvetica", 12),
+        font=("Segoe UI", 12),
         width=30,
         bg=COLORS['entry_bg'],
         fg=COLORS['text_primary'],
@@ -1092,10 +1094,10 @@ def crear_interfaz_principal():
     subject_menu.grid(row=0, column=1, padx=5)
 
     # Campo para id-proyecto
-    tk.Label(frame_top, text="ID-Proyecto:", font=("Helvetica", 14), 
+    tk.Label(frame_top, text="ID-Proyecto:", font=("Segoe UI", 14), 
             bg=COLORS['bg_primary'], fg=COLORS['text_primary']).grid(row=1, column=0, padx=5, pady=5)
     team_entry = tk.Entry(frame_top, textvariable=team_name_var, 
-                         font=("Helvetica", 12), width=20)
+                         font=("Segoe UI", 12), width=20)
     team_entry.grid(row=1, column=1, padx=5)
     team_entry.configure(
         bg=COLORS['entry_bg'],
@@ -1106,12 +1108,12 @@ def crear_interfaz_principal():
     )
 
     # Campo para título
-    tk.Label(frame_top, text="Título:", font=("Helvetica", 14), 
+    tk.Label(frame_top, text="Título:", font=("Segoe UI", 14), 
             bg=COLORS['bg_primary'], fg=COLORS['text_primary']).grid(row=2, column=0, padx=5, pady=5)
     global tema_equipo_var
     tema_equipo_var = tk.StringVar()
     tema_entry = tk.Entry(frame_top, textvariable=tema_equipo_var, 
-                         font=("Helvetica", 12), width=30)
+                         font=("Segoe UI", 12), width=30)
     tema_entry.grid(row=2, column=1, padx=5)
     tema_entry.configure(
         bg=COLORS['entry_bg'],
@@ -1164,19 +1166,19 @@ if __name__ == "__main__":
 
     # Info
     subject_label = tk.Label(root, text="Evento: ", 
-                           font=("Helvetica", 16, "bold"), 
+                           font=("Segoe UI", 16, "bold"), 
                            bg=COLORS['bg_primary'], 
                            fg=COLORS['text_primary'])
     subject_label.pack()
     
     team_label = tk.Label(root, text="ID-Proyecto: ", 
-                        font=("Helvetica", 16, "bold"), 
+                        font=("Segoe UI", 16, "bold"), 
                         bg=COLORS['bg_primary'], 
                         fg=COLORS['text_primary'])
     team_label.pack()
 
     time_display = tk.Label(root, text="00:00", 
-                          font=("Helvetica", 72, "bold"), 
+                          font=("Segoe UI", 72, "bold"), 
                           fg=COLORS['accent_red'], 
                           bg=COLORS['bg_primary'])
     time_display.pack(pady=10)
