@@ -39,7 +39,7 @@ boton_iniciar_temporizador = None
 
 # Al inicio del archivo, después de los imports
 COLORS = {
-    'bg_primary': '#1E272E',      # Gris muy oscuro para el fondo principal
+    'bg_primary': '#000066',      # Azul oscuro para el fondo principal
     'bg_secondary': '#2C3A47',    # Gris oscuro para elementos secundarios
     'text_primary': '#FFFFFF',    # Blanco puro para mejor contraste
     'accent_green': '#2ECC71',    # Verde brillante
@@ -75,13 +75,6 @@ def start_timer():
         total_seconds = 15 * 60  # 15 minutos
     else:
         messagebox.showwarning("Advertencia", "Selecciona un evento válido.")
-        return
-
-    confirmar = messagebox.askyesno(
-        "Confirmar inicio",
-        f"¿Deseas abrir la ventana del semáforo para el proyecto '{team_name}' en el evento '{subject}'?\n\nEl temporizador NO iniciará hasta que presiones el botón INICIAR en la ventana del semáforo."
-    )
-    if not confirmar:
         return
 
     # Deshabilitar el menú de selección y la entrada de equipo
@@ -283,40 +276,51 @@ def abrir_ventana_visual():
     frame_horizontal = tk.Frame(ventana_visual, bg=COLORS['bg_primary'])
     frame_horizontal.pack(fill=tk.BOTH, expand=True)
 
-    frame_textos = tk.Frame(frame_horizontal, bg=COLORS['bg_primary'])
-    frame_textos.pack(side=tk.LEFT, fill=tk.Y, padx=(40, 0), pady=40)
+    # Ajustar el frame de textos para que no sea tan ancho
+    frame_textos = tk.Frame(frame_horizontal, bg=COLORS['bg_primary'], width=260)
+    frame_textos.pack(side=tk.LEFT, fill=tk.Y, padx=(20, 0), pady=20)
+    frame_textos.pack_propagate(False)  # Mantener el ancho fijo
 
     evento_label = tk.Label(frame_textos,
                             text=f"Evento: {current_subject}",
-                            font=("Helvetica", 28, "bold"),
+                            font=("Helvetica", 20, "bold"),
                             bg=COLORS['bg_primary'],
                             fg=COLORS['accent_yellow'],
                             anchor='w', justify='left')
-    evento_label.pack(anchor='w', pady=(10, 0))
+    evento_label.pack(anchor='w', pady=(5, 0))
 
     equipo_label = tk.Label(frame_textos, 
                            text=f"ID-Proyecto: {current_team}",
-                           font=("Helvetica", 24, "bold"),
+                           font=("Helvetica", 16, "bold"),
                            bg=COLORS['bg_primary'],
                            fg=COLORS['text_primary'],
                            anchor='w', justify='left')
-    equipo_label.pack(anchor='w', pady=(10, 0))
+    equipo_label.pack(anchor='w', pady=(5, 0))
 
     tema_equipo_label = tk.Label(frame_textos,
                                  text=f"Título: {tema_equipo}",
-                                 font=("Helvetica", 20),
+                                 font=("Helvetica", 13),
                                  bg=COLORS['bg_primary'],
                                  fg=COLORS['text_primary'],
                                  anchor='w', justify='left')
-    tema_equipo_label.pack(anchor='w', pady=(0, 10))
+    tema_equipo_label.pack(anchor='w', pady=(0, 5))
 
     etapa_label = tk.Label(frame_textos,
-                          text="EXPOSICIÓN",
-                          font=("Helvetica", 36, "bold"),
+                          text="SESION DE EXPOSICIÓN",
+                          font=("Helvetica", 22, "bold"),
                           bg=COLORS['bg_primary'],
                           fg=COLORS['accent_green'],
                           anchor='w', justify='left')
-    etapa_label.pack(anchor='w', pady=10)
+    etapa_label.pack(anchor='w', pady=5)
+
+    # Leyenda de sesión, responsiva y dinámica
+    sesion_label = tk.Label(frame_textos,
+                            text="SESIÓN DE EXPOSICIÓN",
+                            font=("Helvetica", 12, "bold"),
+                            bg=COLORS['bg_primary'],
+                            fg=COLORS['accent_green'],
+                            anchor='center', justify='center', wraplength=250)
+    sesion_label.pack(fill='x', pady=(0, 10))
 
     # Botón para iniciar el temporizador
     def iniciar_temporizador():
@@ -325,11 +329,20 @@ def abrir_ventana_visual():
             running = True
             boton_iniciar_temporizador.config(state='disabled')
             countdown()
-    boton_iniciar_temporizador = tk.Button(frame_textos, text="INICIAR TEMPORIZADOR", font=("Helvetica", 18, "bold"),
+    boton_iniciar_temporizador = tk.Button(frame_textos, text="INICIAR TEMPORIZADOR", font=("Helvetica", 13, "bold"),
                                            bg=COLORS['accent_green'], fg=COLORS['bg_primary'],
                                            activebackground=COLORS['accent_yellow'],
                                            relief='raised', bd=3, command=iniciar_temporizador)
-    boton_iniciar_temporizador.pack(anchor='w', pady=(30, 0))
+    boton_iniciar_temporizador.pack(anchor='w', pady=(15, 0))
+
+    # Imagen de identidad de la feria debajo del botón de iniciar temporizador (más pequeña)
+    try:
+        identidad_img = PhotoImage(file="logo_FPiT_dorado.png").subsample(2, 2)
+        identidad_label = tk.Label(frame_textos, image=identidad_img, bg=COLORS['bg_primary'])
+        identidad_label.image = identidad_img  # Referencia para evitar garbage collection
+        identidad_label.pack(anchor='w', pady=(5, 5))
+    except Exception:
+        pass
 
     frame_semaforo = tk.Frame(frame_horizontal, bg=COLORS['bg_primary'])
     frame_semaforo.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -339,12 +352,13 @@ def abrir_ventana_visual():
                               highlightthickness=0)
     semaforo_canvas.pack(expand=True, fill=tk.BOTH)
 
+    # Barra de progreso más visible y siempre al fondo
     barra_canvas = tk.Canvas(ventana_visual, 
-                           height=10,
+                           height=18,
                            bg=COLORS['bg_secondary'],
                            highlightthickness=0)
-    barra_canvas.pack(fill=tk.X, side=tk.BOTTOM, pady=20)
-    barra_rect = barra_canvas.create_rectangle(0, 0, 0, 10, 
+    barra_canvas.pack(fill=tk.X, side=tk.BOTTOM, pady=(0, 10))
+    barra_rect = barra_canvas.create_rectangle(0, 0, 0, 18, 
                                              fill=COLORS['accent_green'],
                                              width=0)
 
@@ -356,6 +370,10 @@ def abrir_ventana_visual():
     semaforo_canvas.bind("<Configure>", dibujar_semaforo)
     dibujar_semaforo()
     ventana_visual.bind("<Escape>", lambda e: ventana_visual.destroy())
+
+    # Guardar referencia global para actualizar dinámicamente
+    ventana_visual.sesion_label = sesion_label
+    ventana_visual.etapa_label = etapa_label
 
 def dibujar_semaforo(event=None):
     global luces_verdes, luces_amarillas, luces_rojas
@@ -473,6 +491,9 @@ def actualizar_semaforo_y_barra(tiempo_restante):
     transcurrido = total_duration - tiempo_restante
     barra_color = COLORS['accent_green']
     TIEMPO_ROJO = 20  # 20 segundos para el rojo en cada etapa
+
+    # Cambiar leyenda de sesión según la etapa
+    actualizar_leyenda_sesion(etapa_actual)
 
     # Para Protocolo de proyectos de investigación (15 minutos: 5 exposición + 5 preguntas + 5 cambio)
     if current_subject == "Protocolo de proyectos de investigación":
@@ -1127,6 +1148,26 @@ def aumentar_tiempo(event=None):
         time_display.config(text=f"{mins:02}:{secs:02}")
         # Actualizar semáforo y barra inmediatamente
         actualizar_semaforo_y_barra(remaining_time)
+
+def actualizar_leyenda_sesion(etapa):
+    if etapa == "exposicion":
+        texto = "SESIÓN DE EXPOSICIÓN"
+        color = COLORS['accent_green']
+        fuente = ("Helvetica", 12, "bold")
+    elif etapa == "preguntas":
+        texto = "SESIÓN DE PREGUNTAS"
+        color = COLORS['accent_yellow']
+        fuente = ("Helvetica", 12, "bold")
+    elif etapa == "cambio":
+        texto = "SESIÓN DE CAMBIO DE EQUIPO"
+        color = COLORS['accent_red']
+        fuente = ("Helvetica", 11, "bold")  # Más pequeño para texto largo
+    else:
+        texto = ""
+        color = COLORS['text_primary']
+        fuente = ("Helvetica", 12, "bold")
+    if ventana_visual and hasattr(ventana_visual, 'sesion_label'):
+        ventana_visual.sesion_label.config(text=texto, fg=color, font=fuente)
 
 # Modificar la parte donde se crea la interfaz principal
 if __name__ == "__main__":
