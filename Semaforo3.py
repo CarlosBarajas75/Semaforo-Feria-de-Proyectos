@@ -494,18 +494,6 @@ def dibujar_semaforo(event=None):
     # AQUI TERMINA LA CORAZA
 
 
-    # Soporte
-    soporte_width = int(radio * 0.5)
-    soporte_height = int(radio * 1.2)
-    semaforo_canvas.create_rectangle(
-        cx - soporte_width // 2,
-        offset_y + carcasa_height,
-        cx + soporte_width // 2,
-        offset_y + carcasa_height + soporte_height,
-        fill='#95a5a6',
-        width=1,
-        outline='#7f8c8d'
-    )
 
     # Líneas divisorias
     for i in range(1, 3):
@@ -554,9 +542,10 @@ def parpadear_luz(luz, color_original):
         ventana_visual.after(500, lambda: parpadear_luz(luz, color_original))
     else:
         parpadeo_activo = False
+        luz.canvas.itemconfig(luz.luz_id, fill="#333333")
         parpadeo_luz_actual = None
         parpadeo_contador = 0
-
+        controlar_luces(etapa_actual)
 
 def actualizar_semaforo_y_barra(tiempo_restante):
     global parpadeo_activo, parpadeo_contador, etapa_actual, remaining_time, parpadeo_luz_actual
@@ -622,39 +611,41 @@ def actualizar_semaforo_y_barra(tiempo_restante):
     tiempo_verde = tiempo_util * 0.6
     tiempo_amarillo = tiempo_util * 0.4
     
-    # Determinar estado del semáforo
+    # Determinar estado del semáforo y controlar parpadeo
     if tiempo_transcurrido_etapa < tiempo_verde:
         estado = "verde"
-        tiempo_umbral_parpadeo = tiempo_verde - 10
         barra_color = COLORS['accent_green']
+        
+        if tiempo_transcurrido_etapa >= (tiempo_verde - 10) and not parpadeo_activo:
+            parpadeo_activo = True
+            luz = luces_verdes[0]  # solo una luz parpadea
+            parpadeo_luz_actual = luz
+            parpadear_luz(luz, COLORS['accent_green'])
+
     elif tiempo_transcurrido_etapa < tiempo_verde + tiempo_amarillo:
         estado = "amarillo"
-        tiempo_umbral_parpadeo = tiempo_util - 10  # 10s antes del rojo
         barra_color = COLORS['accent_yellow']
+        
+        if tiempo_transcurrido_etapa >= (tiempo_util - 10) and not parpadeo_activo:
+            parpadeo_activo = True
+            luz = luces_amarillas[0]
+            parpadeo_luz_actual = luz
+            parpadear_luz(luz, COLORS['accent_yellow'])
+
     else:
         estado = "rojo"
         barra_color = COLORS['accent_red']
+        if not parpadeo_activo and parpadeo_luz_actual is not None:
+            # detener parpadeo si quedó activo
+            parpadeo_activo = False
+            parpadeo_luz_actual = None
+
     
     controlar_luces(estado)
     
-    # Manejar parpadeo si corresponde
-    if estado != "rojo" and tiempo_restante_etapa <= tiempo_umbral_parpadeo + 10 and tiempo_restante_etapa > tiempo_umbral_parpadeo:
-        luz_parpadeo = luces_verdes[0] if estado == "verde" else luces_amarillas[0]
-        if not parpadeo_activo or parpadeo_luz_actual != luz_parpadeo:
-            parpadeo_activo = True
-            parpadeo_contador = 0
-            parpadeo_luz_actual = luz_parpadeo
-            color_parpadeo = COLORS['accent_green'] if estado == "verde" else COLORS['accent_yellow']
-            for luz in (luces_verdes if estado == "verde" else luces_amarillas):
-                parpadear_luz(luz, color_parpadeo)
-    elif parpadeo_activo:
-        parpadeo_activo = False
-        parpadeo_luz_actual = None
-        parpadeo_contador = 0
-        controlar_luces(estado)
-    
     progreso = tiempo_transcurrido_etapa / tiempo_etapa
     actualizar_barra_progreso(progreso, barra_color)
+
 
 def confirmar_cambio_etapa(nueva_etapa):
     if nueva_etapa == "preguntas":
@@ -672,10 +663,13 @@ def controlar_luces(estado):
         for luz in luces_verdes: luz.apagar()
         for luz in luces_amarillas: luz.encender()
         for luz in luces_rojas: luz.apagar()
-    else:  # rojo
+    elif estado == "rojo":
         for luz in luces_verdes: luz.apagar()
         for luz in luces_amarillas: luz.apagar()
         for luz in luces_rojas: luz.encender()
+    elif estado == "apagado":
+        for luz in luces_verdes + luces_amarillas + luces_rojas:
+            luz.apagar()
 
 def actualizar_barra_progreso(progreso, color):
     ancho_total = barra_canvas.winfo_width()
