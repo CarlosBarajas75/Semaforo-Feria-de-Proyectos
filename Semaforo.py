@@ -462,10 +462,7 @@ def parpadear_luz(luz, color_original, num_parpadeos=20):
                 luz.canvas.itemconfig(luz.luz_id, fill="#333333")
             else:
                 luz.canvas.itemconfig(luz.luz_id, fill=color_original)
-                try:
-                    winsound.Beep(1200, 120)
-                except Exception:
-                    pass
+                # Sonido eliminado
             estado['encendida'] = not estado['encendida']
             contador['valor'] += 1
             ventana_visual.after(500, ciclo)
