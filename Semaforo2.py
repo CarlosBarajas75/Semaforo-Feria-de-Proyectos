@@ -39,17 +39,19 @@ boton_iniciar_temporizador = None
 
 # Al inicio del archivo, después de los imports
 COLORS = {
-    'bg_primary': '#1e1e2f',        # Azul-gris oscuro
-    'bg_secondary': '#2b2b3c',      # Para marcos y elementos secundarios
-    'text_primary': '#E0E0E0',      # Gris claro (mejor que blanco puro)
-    'accent_green': '#00c896',      # Verde menta
+    'bg_primary': '#000066',        # Azul-gris oscuro
+    'bg_secondary': '#8787BD',      # Para marcos y elementos secundarios
+    'text_primary': '#ffffff',      # Gris claro (mejor que blanco puro)
+    'accent_green': '#55FF42',      # Verde menta
     'accent_yellow': '#f1c40f',     # Amarillo vibrante
     'accent_red': '#ff4c4c',        # Rojo brillante
-    'button_bg': '#3a3a4f',         # Botón más claro
-    'button_hover': '#505065',      # Hover más suave
+    'button_bg': '#6767FF',         # Botón más claro
+    'button_hover': '#4848FF',      # Hover más suave
     'entry_bg': '#3a3a4f',          # Campo de texto
     'button_text': '#FFFFFF',
-    'border_color': '#5D6D7E'
+    'border_color': '#5D6D7E',
+    'semaforo_green': '#25C913',
+    'semaforo-coraza': '#000000'
 }
 
 
@@ -71,11 +73,18 @@ def start_timer():
         return
 
     if subject == "Informe de proyectos de investigación":
-        total_seconds = 20 * 60  # 20 minutos
+        total_seconds = 0.2 * 60  # 20 minutos
     elif subject == "Protocolo de proyectos de investigación":
         total_seconds = 15 * 60  # 15 minutos
     else:
         messagebox.showwarning("Advertencia", "Selecciona un evento válido.")
+        return
+
+    confirmar = messagebox.askyesno(
+        "Confirmar inicio",
+        f"¿Deseas abrir la ventana del semáforo para el proyecto '{team_name}' en el evento '{subject}'?\n\nEl temporizador NO iniciará hasta que presiones el botón INICIAR en la ventana del semáforo."
+    )
+    if not confirmar:
         return
 
     # Deshabilitar el menú de selección y la entrada de equipo
@@ -84,7 +93,7 @@ def start_timer():
     tema_entry.config(state='disabled')
 
     total_duration = total_seconds
-    subject_label.config(text=f"Evento: {subject}")
+    subject_label.config(text=f"Modalidad  {subject}")
     team_label.config(text=f"ID-Proyecto: {team_name}")
     remaining_time = total_seconds
     current_team = team_name
@@ -127,37 +136,61 @@ def animar_transicion(widget, **kwargs):
     _animate(0)
 
 def crear_boton_personalizado(parent, texto, comando):
-    btn = tk.Button(
+    btn_canvas = tk.Canvas(
         parent,
-        text=texto,
-        font=('Segoe UI', 14, 'bold'),
         bg=COLORS['button_bg'],
-        fg=COLORS['text_primary'],
-        activebackground=COLORS['button_hover'],
-        activeforeground=COLORS['text_primary'],
-        relief='flat',
+        highlightthickness=0,
         bd=0,
-        padx=20,
-        pady=10,
-        command=comando
+        height=40,  # Altura del botón
+        width=150   # Ancho del botón (ajustar según necesidad)
     )
     
-    def on_enter(e):
-        btn.config(
-            bg=COLORS['button_hover'],
-            relief='solid'
-        )
+    # Dibujar el botón redondeado
+    def dibujar_boton(color_bg):
+        btn_canvas.delete("all")
+        x1, y1 = 2, 2
+        x2, y2 = btn_canvas.winfo_width()-2, btn_canvas.winfo_height()-2
+        radio = 15
         
-    def on_leave(e):
-        btn.config(
-            bg=COLORS['button_bg'],
-            relief='solid'
+        # Crear un rectángulo con esquinas redondeadas
+        btn_canvas.create_arc(x1, y1, x1+2*radio, y1+2*radio, start=90, extent=90, fill=color_bg, outline=color_bg)
+        btn_canvas.create_arc(x2-2*radio, y1, x2, y1+2*radio, start=0, extent=90, fill=color_bg, outline=color_bg)
+        btn_canvas.create_arc(x1, y2-2*radio, x1+2*radio, y2, start=180, extent=90, fill=color_bg, outline=color_bg)
+        btn_canvas.create_arc(x2-2*radio, y2-2*radio, x2, y2, start=270, extent=90, fill=color_bg, outline=color_bg)
+        
+        btn_canvas.create_rectangle(x1+radio, y1, x2-radio, y2, fill=color_bg, outline=color_bg)
+        btn_canvas.create_rectangle(x1, y1+radio, x2, y2-radio, fill=color_bg, outline=color_bg)
+        
+        # Añadir texto
+        btn_canvas.create_text(
+            btn_canvas.winfo_width()/2,
+            btn_canvas.winfo_height()/2,
+            text=texto,
+            font=('Segoe UI', 12, 'bold'),
+            fill=COLORS['button_text']
         )
     
-    btn.bind('<Enter>', on_enter)
-    btn.bind('<Leave>', on_leave)
+    # Dibujar el botón inicial
+    btn_canvas.after(0, lambda: dibujar_boton(COLORS['button_bg']))
     
-    return btn
+    # Configurar eventos
+    def on_enter(e):
+        dibujar_boton(COLORS['button_hover'])
+    
+    def on_leave(e):
+        btn_canvas.after(0, lambda: dibujar_boton(COLORS['button_bg']))
+    
+    def on_click(e):
+        comando()
+        # Efecto visual al hacer clic
+        btn_canvas.config(bg=COLORS['accent_yellow'])
+        parent.after(100, lambda: btn_canvas.config(bg=COLORS['button_hover']))
+    
+    btn_canvas.bind('<Enter>', on_enter)
+    btn_canvas.bind('<Leave>', on_leave)
+    btn_canvas.bind('<Button-1>', on_click)
+    
+    return btn_canvas
 
 class LuzSemaforo:
     def __init__(self, canvas, x, y, radio, color_apagado, color_encendido):
@@ -280,9 +313,30 @@ def abrir_ventana_visual():
     frame_textos = tk.Frame(frame_horizontal, bg=COLORS['bg_primary'])
     frame_textos.pack(side=tk.LEFT, fill='both', expand=True, padx=(40, 0), pady=40)
 
+    if 'luces_verdes' in globals() and luces_verdes:
+        for luz in luces_verdes:
+            luz.apagar()
+    if 'luces_amarillas' in globals() and luces_amarillas:
+        for luz in luces_amarillas:
+            luz.apagar()
+    if 'luces_rojas' in globals() and luces_rojas:
+        for luz in luces_rojas:
+            luz.apagar()
+
+    def iniciar_temporizador():
+        global running
+        if not running:
+            running = True
+            boton_iniciar_temporizador.config(state='disabled')
+            countdown()
+    boton_iniciar_temporizador = tk.Button(frame_textos, text="INICIAR TEMPORIZADOR", font=("Segoe UI", 18, "bold"),
+                                           bg=COLORS['accent_green'], fg=COLORS['bg_primary'],
+                                           activebackground=COLORS['accent_yellow'],
+                                           relief='raised', bd=3, command=iniciar_temporizador)
+    boton_iniciar_temporizador.pack(anchor='w', pady=(30, 0))
 
     evento_label = tk.Label(frame_textos,
-                            text=f"Evento: {current_subject}",
+                            text=f"Modalidad  {current_subject}",
                             font=("Segoe UI", 28, "bold"),
                             bg=COLORS['bg_primary'],
                             fg=COLORS['accent_yellow'],
@@ -305,29 +359,6 @@ def abrir_ventana_visual():
                                  anchor='center', justify='center')
     tema_equipo_label.pack(anchor='w', pady=(0, 10))
 
-    etapa_label = tk.Label(frame_textos,
-                          text="EXPOSICIÓN",
-                          font=("Segoe UI", 36, "bold"),
-                          bg=COLORS['bg_primary'],
-                          fg=COLORS['accent_green'],
-                          anchor='center', justify='center')
-    etapa_label.pack(anchor='w', pady=10)
-
-
-    # Definir la función antes de crear el botón
-    def iniciar_temporizador():
-        global running
-        if not running:
-            running = True
-            boton_iniciar_temporizador.config(state='disabled')
-            countdown()
-            
-    boton_iniciar_temporizador = tk.Button(frame_textos, text="INICIAR TEMPORIZADOR", font=("Segoe UI", 18, "bold"),
-                                           
-                                           bg=COLORS['accent_green'], fg=COLORS['bg_primary'],
-                                           activebackground=COLORS['accent_yellow'],
-                                           relief='raised', bd=3, command=iniciar_temporizador)
-    boton_iniciar_temporizador.pack(anchor='w', pady=(10, 0))
 
     try:
         banner_image = tk.PhotoImage(file="fpi-round-white.png")
@@ -359,15 +390,12 @@ def abrir_ventana_visual():
                               highlightthickness=0, borderwidth=0)
     semaforo_canvas.pack(expand=True, fill=tk.BOTH)
 
-    # Barra de progreso más visible y siempre al fondo
     barra_canvas = tk.Canvas(ventana_visual, 
-                           height=18,
+                           height=10,
                            bg=COLORS['bg_secondary'],
-
                            highlightthickness=0, borderwidth=0)
     barra_canvas.pack(fill=tk.X, side=tk.BOTTOM, pady=20)
     barra_rect = barra_canvas.create_rectangle(0, 0, 0, 10, 
-
                                              fill=COLORS['accent_green'],
                                              width=0)
 
@@ -380,14 +408,20 @@ def abrir_ventana_visual():
     dibujar_semaforo()
     ventana_visual.bind("<Escape>", lambda e: ventana_visual.destroy())
 
-    # Guardar referencia global para actualizar dinámicamente
-    ventana_visual.etapa_label = etapa_label
-
 def dibujar_semaforo(event=None):
     global luces_verdes, luces_amarillas, luces_rojas
-    semaforo_canvas.delete("all")
+
     w = semaforo_canvas.winfo_width()
     h = semaforo_canvas.winfo_height()
+
+    semaforo_canvas.delete("all")
+    if not semaforo_canvas.winfo_exists():
+        return
+
+    luces_verdes.clear()
+    luces_amarillas.clear()
+    luces_rojas.clear()
+
 
     # Cálculo responsivo: considerar 3 luces + espacios + márgenes
     # Margen mínimo alrededor
@@ -398,7 +432,9 @@ def dibujar_semaforo(event=None):
     # Queremos 3 círculos y 2 espacios entre ellos, todo dentro del área útil
     # radio + espacio + radio + espacio + radio = area_util_h
     # Definimos proporción espacio/radio (por ejemplo, espacio = 0.5*radio)
-    # 3*radio + 2*espacio = area_util_h => radio = area_util_h / (3 + 2*k)
+    # 3*radio + 2*espacio = area_util_h
+    # espacio = k*radio
+    # 3*radio + 2*k*radio = area_util_h => radio = area_util_h / (3 + 2*k)
     k = 0.5  # proporción espacio/radio
     radio_h = area_util_h / (3 + 2 * k) / 2  # /2 porque radio es la mitad del diámetro
     radio_w = area_util_w / 3 / 2  # máximo radio para que quepan 3 círculos horizontalmente
@@ -414,18 +450,79 @@ def dibujar_semaforo(event=None):
     luces_amarillas = []
     luces_rojas = []
 
-    # Carcasa
+        # AQUI EMPIEZA LA CORAZA
     carcasa_width = int(radio * 2.8)
     carcasa_height = alto_semaforo + int(radio * 0.4)
+    radio_esquinas = int(radio * 0.4)
+
+    # Coordenadas de la carcasa
+    x1 = cx - carcasa_width // 2
+    y1 = offset_y - int(radio * 0.2)
+    x2 = cx + carcasa_width // 2
+    y2 = offset_y + carcasa_height
+
+    # Crear la carcasa con esquinas redondeadas
+    # Primero dibujamos el rectángulo principal relleno
     semaforo_canvas.create_rectangle(
-        cx - carcasa_width // 2,
-        offset_y - int(radio * 0.2),
-        cx + carcasa_width // 2,
-        offset_y + carcasa_height,
-        fill=COLORS['bg_secondary'],
-        width=2,
-        outline=COLORS['text_primary']
+        x1, 
+        y1 + radio_esquinas, 
+        x2, 
+        y2 - radio_esquinas, 
+        fill=COLORS['semaforo-coraza'], 
+        outline=COLORS['semaforo-coraza']
     )
+
+    semaforo_canvas.create_rectangle(
+        x1 + radio_esquinas, 
+        y1, 
+        x2 - radio_esquinas, 
+        y2, 
+        fill=COLORS['semaforo-coraza'], 
+        outline=COLORS['semaforo-coraza']
+    )
+
+    # Esquina superior izquierda
+    semaforo_canvas.create_oval(
+        x1, 
+        y1, 
+        x1 + 2*radio_esquinas, 
+        y1 + 2*radio_esquinas, 
+        fill=COLORS['semaforo-coraza'], 
+        outline=COLORS['semaforo-coraza']
+    )
+
+    # Esquina superior derecha
+    semaforo_canvas.create_oval(
+        x2 - 2*radio_esquinas, 
+        y1, 
+        x2, 
+        y1 + 2*radio_esquinas, 
+        fill=COLORS['semaforo-coraza'], 
+        outline=COLORS['semaforo-coraza']
+    )
+
+    # Esquina inferior izquierda
+    semaforo_canvas.create_oval(
+        x1, 
+        y2 - 2*radio_esquinas, 
+        x1 + 2*radio_esquinas, 
+        y2, 
+        fill=COLORS['semaforo-coraza'], 
+        outline=COLORS['semaforo-coraza']
+    )
+
+    # Esquina inferior derecha
+    semaforo_canvas.create_oval(
+        x2 - 2*radio_esquinas, 
+        y2 - 2*radio_esquinas, 
+        x2, 
+        y2, 
+        fill=COLORS['semaforo-coraza'], 
+        outline=COLORS['semaforo-coraza']
+    )
+
+    # AQUI TERMINA LA CORAZA
+
     # Soporte
     soporte_width = int(radio * 0.5)
     soporte_height = int(radio * 1.2)
@@ -452,9 +549,11 @@ def dibujar_semaforo(event=None):
         )
 
     # Luces
-    for idx, color in enumerate([(COLORS['accent_green'], luces_verdes),
-                                 (COLORS['accent_yellow'], luces_amarillas),
-                                 (COLORS['accent_red'], luces_rojas)]):
+    for idx, (color_encendido, lista_luces) in enumerate([
+        (COLORS['accent_green'], luces_verdes),
+        (COLORS['accent_yellow'], luces_amarillas),
+        (COLORS['accent_red'], luces_rojas)
+    ]):
         y = offset_y + radio + idx * (2 * radio + espacio)
         luz = LuzSemaforo(
             semaforo_canvas,
@@ -462,43 +561,52 @@ def dibujar_semaforo(event=None):
             y,
             radio,
             "#333333",
-            color[0]
+            color_encendido
         )
-        color[1].append(luz)
+        lista_luces.append(luz)
 
-def parpadear_luz(luz, color_original, num_parpadeos=20):
-    '''Parpadea la luz indicada num_parpadeos veces (por defecto 10 segundos).'''
-    contador = {'valor': 0}
-    estado = {'encendida': False}
+def parpadear_luz(luz, color_original):
+    global parpadeo_contador, parpadeo_luz_actual, parpadeo_activo
+    # Si la luz que está parpadeando ya no es la actual, detener parpadeo
+    if parpadeo_luz_actual is not luz:
+        luz.canvas.itemconfig(luz.luz_id, fill="#333333")
+        return
+    if parpadeo_contador < 20:  # 10 segundos (20 cambios de 0.5s)
+        if parpadeo_contador % 2 == 0:
+            luz.canvas.itemconfig(luz.luz_id, fill="#333333")  # Apagar
+        else:
+            luz.canvas.itemconfig(luz.luz_id, fill=color_original)  # Encender
+            # Sonido intermitente al encender
+            try:
+                winsound.Beep(1200, 120)
+            except Exception:
+                pass
+        parpadeo_contador += 1
+        ventana_visual.after(500, lambda: parpadear_luz(luz, color_original))
+    else:
+        parpadeo_activo = False
+        parpadeo_luz_actual = None
+        parpadeo_contador = 0
 
-    def ciclo():
-        if contador['valor'] < num_parpadeos:
-            if estado['encendida']:
-                luz.canvas.itemconfig(luz.luz_id, fill="#333333")
-            else:
-                luz.canvas.itemconfig(luz.luz_id, fill=color_original)
-                # Sonido eliminado
-            estado['encendida'] = not estado['encendida']
-            contador['valor'] += 1
-            ventana_visual.after(500, ciclo)
+
+def encender_una_sola_luz(luces_encender):
+    for luz in luces_verdes + luces_amarillas + luces_rojas:
+        if luz in luces_encender:
+            luz.encender()
         else:
             luz.apagar()
-            # Al terminar el parpadeo, forzar actualización del semáforo
-            actualizar_semaforo_y_barra(remaining_time)
-
-    ciclo()
 
 def actualizar_semaforo_y_barra(tiempo_restante):
     global parpadeo_activo, parpadeo_contador, etapa_actual, luces_verdes, luces_amarillas, luces_rojas, remaining_time, parpadeo_luz_actual
     if not ventana_visual or not luces_verdes:
         return
+    
+    for luz in luces_verdes + luces_amarillas + luces_rojas:
+        luz.apagar()
 
     transcurrido = total_duration - tiempo_restante
     barra_color = COLORS['accent_green']
-    TIEMPO_ROJO = 5  # Ahora el rojo solo dura 5 segundos
-
-    # Cambiar leyenda de sesión según la etapa
-    actualizar_leyenda_sesion(etapa_actual)
+    TIEMPO_ROJO = 20  # 20 segundos para el rojo en cada etapa
 
     # Para Protocolo de proyectos de investigación (15 minutos: 5 exposición + 5 preguntas + 5 cambio)
     if current_subject == "Protocolo de proyectos de investigación":
@@ -520,15 +628,12 @@ def actualizar_semaforo_y_barra(tiempo_restante):
             
             # Control de luces para exposición
             if transcurrido < tiempo_verde:  # Verde
-                for luz in luces_verdes:
-                    luz.encender()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.apagar()
+                encender_una_sola_luz(luces_verdes)
                 barra_color = COLORS['accent_green']
-                # Parpadeo 10 segundos antes del cambio
-                if tiempo_restante_etapa <= (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO + 10) and tiempo_restante_etapa > (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO):
+                
+                # Parpadeo 10 segundos antes
+                if tiempo_restante_etapa <= (tiempo_exposicion - tiempo_verde + 10) and \
+                   tiempo_restante_etapa > (tiempo_exposicion - tiempo_verde):
                     if not parpadeo_activo or parpadeo_luz_actual != luces_verdes[0]:
                         parpadeo_activo = True
                         parpadeo_contador = 0
@@ -536,19 +641,18 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         for luz in luces_verdes:
                             parpadear_luz(luz, COLORS['accent_green'])
                 else:
+                    # Si ya no debe parpadear, asegurarse de apagar el parpadeo
                     if parpadeo_activo and parpadeo_luz_actual == luces_verdes[0]:
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
+                
             elif transcurrido < (tiempo_verde + tiempo_amarillo):  # Amarillo
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.encender()
-                for luz in luces_rojas:
-                    luz.apagar()
+                # Apagar verde antes de encender amarillo
+                encender_una_sola_luz(luces_amarillas)
                 barra_color = COLORS['accent_yellow']
-                # Parpadeo 10 segundos antes del cambio
+                
+                # Parpadeo 10 segundos antes
                 if tiempo_restante_etapa <= (TIEMPO_ROJO + 10) and tiempo_restante_etapa > TIEMPO_ROJO:
                     if not parpadeo_activo or parpadeo_luz_actual != luces_amarillas[0]:
                         parpadeo_activo = True
@@ -561,36 +665,10 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
-            else:  # Rojo (últimos 5 segundos)
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.encender()
+                
+            else:  # Rojo (últimos 20 segundos)
+                encender_una_sola_luz(luces_rojas)
                 barra_color = COLORS['accent_red']
-                # Si el rojo acaba, preguntar para avanzar
-                if tiempo_restante_etapa <= 0:
-                    if etapa_actual == "exposicion":
-                        if messagebox.askyesno("Sección de preguntas", "¿Están listos para iniciar la sección de preguntas?"):
-                            etapa_actual = "preguntas"
-                            etapa_label.config(text="PREGUNTAS", fg=COLORS['accent_yellow'])
-                            remaining_time -= 1  # Avanza el tiempo para salir del rojo
-                        else:
-                            remaining_time += 1  # Espera
-                            return
-                    elif etapa_actual == "preguntas":
-                        if messagebox.askyesno("Cambio de equipo", "¿Están listos para el cambio de equipo?"):
-                            etapa_actual = "cambio"
-                            etapa_label.config(text="CAMBIO DE EQUIPO", fg=COLORS['accent_red'])
-                            remaining_time -= 1
-                        else:
-                            remaining_time += 1
-                            return
-                    elif etapa_actual == "cambio":
-                        # Fin de la sesión, cerrar ventana
-                        if ventana_visual:
-                            ventana_visual.destroy()
                 if parpadeo_activo:
                     parpadeo_activo = False
                     parpadeo_luz_actual = None
@@ -618,15 +696,11 @@ def actualizar_semaforo_y_barra(tiempo_restante):
             
             # Control de luces para preguntas
             if tiempo_transcurrido_preguntas < tiempo_verde:  # Verde
-                for luz in luces_verdes:
-                    luz.encender()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.apagar()
+                encender_una_sola_luz(luces_verdes)
                 barra_color = COLORS['accent_green']
-                # Parpadeo 10 segundos antes del cambio
-                if tiempo_restante_etapa <= (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO + 10) and tiempo_restante_etapa > (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO):
+                
+                if tiempo_restante_etapa <= (tiempo_preguntas - tiempo_verde + 10) and \
+                   tiempo_restante_etapa > (tiempo_preguntas - tiempo_verde):
                     if not parpadeo_activo or parpadeo_luz_actual != luces_verdes[0]:
                         parpadeo_activo = True
                         parpadeo_contador = 0
@@ -638,15 +712,12 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
+                            
             elif tiempo_transcurrido_preguntas < (tiempo_verde + tiempo_amarillo):  # Amarillo
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.encender()
-                for luz in luces_rojas:
-                    luz.apagar()
+                # Apagar verde antes de encender amarillo
+                encender_una_sola_luz(luces_amarillas)
                 barra_color = COLORS['accent_yellow']
-                # Parpadeo 10 segundos antes del cambio
+                
                 if tiempo_restante_etapa <= (TIEMPO_ROJO + 10) and tiempo_restante_etapa > TIEMPO_ROJO:
                     if not parpadeo_activo or parpadeo_luz_actual != luces_amarillas[0]:
                         parpadeo_activo = True
@@ -659,36 +730,10 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
-            else:  # Rojo (últimos 5 segundos)
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.encender()
+                            
+            else:  # Rojo (últimos 20 segundos)
+                encender_una_sola_luz(luces_rojas)
                 barra_color = COLORS['accent_red']
-                # Si el rojo acaba, preguntar para avanzar
-                if tiempo_restante_etapa <= 0:
-                    if etapa_actual == "exposicion":
-                        if messagebox.askyesno("Sección de preguntas", "¿Están listos para iniciar la sección de preguntas?"):
-                            etapa_actual = "preguntas"
-                            etapa_label.config(text="PREGUNTAS", fg=COLORS['accent_yellow'])
-                            remaining_time -= 1  # Avanza el tiempo para salir del rojo
-                        else:
-                            remaining_time += 1  # Espera
-                            return
-                    elif etapa_actual == "preguntas":
-                        if messagebox.askyesno("Cambio de equipo", "¿Están listos para el cambio de equipo?"):
-                            etapa_actual = "cambio"
-                            etapa_label.config(text="CAMBIO DE EQUIPO", fg=COLORS['accent_red'])
-                            remaining_time -= 1
-                        else:
-                            remaining_time += 1
-                            return
-                    elif etapa_actual == "cambio":
-                        # Fin de la sesión, cerrar ventana
-                        if ventana_visual:
-                            ventana_visual.destroy()
                 if parpadeo_activo:
                     parpadeo_activo = False
                     parpadeo_luz_actual = None
@@ -715,15 +760,11 @@ def actualizar_semaforo_y_barra(tiempo_restante):
             
             # Control de luces para cambio
             if tiempo_transcurrido_cambio < tiempo_verde:  # Verde
-                for luz in luces_verdes:
-                    luz.encender()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.apagar()
+                encender_una_sola_luz(luces_verdes)
                 barra_color = COLORS['accent_green']
-                # Parpadeo 10 segundos antes del cambio
-                if tiempo_restante_etapa <= (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO + 10) and tiempo_restante_etapa > (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO):
+                
+                if tiempo_restante_etapa <= (tiempo_cambio - tiempo_verde + 10) and \
+                   tiempo_restante_etapa > (tiempo_cambio - tiempo_verde):
                     if not parpadeo_activo or parpadeo_luz_actual != luces_verdes[0]:
                         parpadeo_activo = True
                         parpadeo_contador = 0
@@ -735,15 +776,12 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
+                            
             elif tiempo_transcurrido_cambio < (tiempo_verde + tiempo_amarillo):  # Amarillo
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.encender()
-                for luz in luces_rojas:
-                    luz.apagar()
+                # Apagar verde antes de encender amarillo
+                encender_una_sola_luz(luces_amarillas)
                 barra_color = COLORS['accent_yellow']
-                # Parpadeo 10 segundos antes del cambio
+                
                 if tiempo_restante_etapa <= (TIEMPO_ROJO + 10) and tiempo_restante_etapa > TIEMPO_ROJO:
                     if not parpadeo_activo or parpadeo_luz_actual != luces_amarillas[0]:
                         parpadeo_activo = True
@@ -756,36 +794,10 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
-            else:  # Rojo (últimos 5 segundos)
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.encender()
+                
+            else:  # Rojo (últimos 20 segundos)
+                encender_una_sola_luz(luces_rojas)
                 barra_color = COLORS['accent_red']
-                # Si el rojo acaba, preguntar para avanzar
-                if tiempo_restante_etapa <= 0:
-                    if etapa_actual == "exposicion":
-                        if messagebox.askyesno("Sección de preguntas", "¿Están listos para iniciar la sección de preguntas?"):
-                            etapa_actual = "preguntas"
-                            etapa_label.config(text="PREGUNTAS", fg=COLORS['accent_yellow'])
-                            remaining_time -= 1  # Avanza el tiempo para salir del rojo
-                        else:
-                            remaining_time += 1  # Espera
-                            return
-                    elif etapa_actual == "preguntas":
-                        if messagebox.askyesno("Cambio de equipo", "¿Están listos para el cambio de equipo?"):
-                            etapa_actual = "cambio"
-                            etapa_label.config(text="CAMBIO DE EQUIPO", fg=COLORS['accent_red'])
-                            remaining_time -= 1
-                        else:
-                            remaining_time += 1
-                            return
-                    elif etapa_actual == "cambio":
-                        # Fin de la sesión, cerrar ventana
-                        if ventana_visual:
-                            ventana_visual.destroy()
                 if parpadeo_activo:
                     parpadeo_activo = False
                     parpadeo_luz_actual = None
@@ -813,15 +825,12 @@ def actualizar_semaforo_y_barra(tiempo_restante):
             
             # Control de luces para exposición
             if transcurrido < tiempo_verde:  # Verde
-                for luz in luces_verdes:
-                    luz.encender()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.apagar()
+                encender_una_sola_luz(luces_verdes)
                 barra_color = COLORS['accent_green']
-                # Parpadeo 10 segundos antes del cambio
-                if tiempo_restante_etapa <= (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO + 10) and tiempo_restante_etapa > (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO):
+                
+                # Parpadeo 10 segundos antes
+                if tiempo_restante_etapa <= (tiempo_exposicion - tiempo_verde + 10) and \
+                   tiempo_restante_etapa > (tiempo_exposicion - tiempo_verde):
                     if not parpadeo_activo or parpadeo_luz_actual != luces_verdes[0]:
                         parpadeo_activo = True
                         parpadeo_contador = 0
@@ -833,15 +842,13 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
+                
             elif transcurrido < (tiempo_verde + tiempo_amarillo):  # Amarillo
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.encender()
-                for luz in luces_rojas:
-                    luz.apagar()
+                # Apagar verde antes de encender amarillo
+                encender_una_sola_luz(luces_amarillas)
                 barra_color = COLORS['accent_yellow']
-                # Parpadeo 10 segundos antes del cambio
+                
+                # Parpadeo 10 segundos antes
                 if tiempo_restante_etapa <= (TIEMPO_ROJO + 10) and tiempo_restante_etapa > TIEMPO_ROJO:
                     if not parpadeo_activo or parpadeo_luz_actual != luces_amarillas[0]:
                         parpadeo_activo = True
@@ -854,36 +861,10 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
-            else:  # Rojo (últimos 5 segundos)
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.encender()
+                
+            else:  # Rojo (últimos 20 segundos)
+                encender_una_sola_luz(luces_rojas)
                 barra_color = COLORS['accent_red']
-                # Si el rojo acaba, preguntar para avanzar
-                if tiempo_restante_etapa <= 0:
-                    if etapa_actual == "exposicion":
-                        if messagebox.askyesno("Sección de preguntas", "¿Están listos para iniciar la sección de preguntas?"):
-                            etapa_actual = "preguntas"
-                            etapa_label.config(text="PREGUNTAS", fg=COLORS['accent_yellow'])
-                            remaining_time -= 1  # Avanza el tiempo para salir del rojo
-                        else:
-                            remaining_time += 1  # Espera
-                            return
-                    elif etapa_actual == "preguntas":
-                        if messagebox.askyesno("Cambio de equipo", "¿Están listos para el cambio de equipo?"):
-                            etapa_actual = "cambio"
-                            etapa_label.config(text="CAMBIO DE EQUIPO", fg=COLORS['accent_red'])
-                            remaining_time -= 1
-                        else:
-                            remaining_time += 1
-                            return
-                    elif etapa_actual == "cambio":
-                        # Fin de la sesión, cerrar ventana
-                        if ventana_visual:
-                            ventana_visual.destroy()
                 if parpadeo_activo:
                     parpadeo_activo = False
                     parpadeo_luz_actual = None
@@ -910,15 +891,12 @@ def actualizar_semaforo_y_barra(tiempo_restante):
             
             # Similar lógica para preguntas con los nuevos tiempos
             if tiempo_transcurrido_preguntas < tiempo_verde:  # Verde
-                for luz in luces_verdes:
-                    luz.encender()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.apagar()
+                encender_una_sola_luz(luces_verdes)
                 barra_color = COLORS['accent_green']
-                # Parpadeo 10 segundos antes del cambio
-                if tiempo_restante_etapa <= (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO + 10) and tiempo_restante_etapa > (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO):
+                
+                # Parpadeo 10 segundos antes
+                if tiempo_restante_etapa <= (tiempo_exposicion - tiempo_verde + 10) and \
+                   tiempo_restante_etapa > (tiempo_exposicion - tiempo_verde):
                     if not parpadeo_activo or parpadeo_luz_actual != luces_verdes[0]:
                         parpadeo_activo = True
                         parpadeo_contador = 0
@@ -930,15 +908,13 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
+                
             elif tiempo_transcurrido_preguntas < (tiempo_verde + tiempo_amarillo):  # Amarillo
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.encender()
-                for luz in luces_rojas:
-                    luz.apagar()
+                # Apagar verde antes de encender amarillo
+                encender_una_sola_luz(luces_amarillas)
                 barra_color = COLORS['accent_yellow']
-                # Parpadeo 10 segundos antes del cambio
+                
+                # Parpadeo 10 segundos antes
                 if tiempo_restante_etapa <= (TIEMPO_ROJO + 10) and tiempo_restante_etapa > TIEMPO_ROJO:
                     if not parpadeo_activo or parpadeo_luz_actual != luces_amarillas[0]:
                         parpadeo_activo = True
@@ -951,36 +927,10 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
-            else:  # Rojo (últimos 5 segundos)
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.encender()
+                
+            else:  # Rojo (últimos 20 segundos)
+                encender_una_sola_luz(luces_rojas)
                 barra_color = COLORS['accent_red']
-                # Si el rojo acaba, preguntar para avanzar
-                if tiempo_restante_etapa <= 0:
-                    if etapa_actual == "exposicion":
-                        if messagebox.askyesno("Sección de preguntas", "¿Están listos para iniciar la sección de preguntas?"):
-                            etapa_actual = "preguntas"
-                            etapa_label.config(text="PREGUNTAS", fg=COLORS['accent_yellow'])
-                            remaining_time -= 1  # Avanza el tiempo para salir del rojo
-                        else:
-                            remaining_time += 1  # Espera
-                            return
-                    elif etapa_actual == "preguntas":
-                        if messagebox.askyesno("Cambio de equipo", "¿Están listos para el cambio de equipo?"):
-                            etapa_actual = "cambio"
-                            etapa_label.config(text="CAMBIO DE EQUIPO", fg=COLORS['accent_red'])
-                            remaining_time -= 1
-                        else:
-                            remaining_time += 1
-                            return
-                    elif etapa_actual == "cambio":
-                        # Fin de la sesión, cerrar ventana
-                        if ventana_visual:
-                            ventana_visual.destroy()
                 if parpadeo_activo:
                     parpadeo_activo = False
                     parpadeo_luz_actual = None
@@ -1007,15 +957,12 @@ def actualizar_semaforo_y_barra(tiempo_restante):
             
             # Similar lógica para cambio con los nuevos tiempos
             if tiempo_transcurrido_cambio < tiempo_verde:  # Verde
-                for luz in luces_verdes:
-                    luz.encender()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.apagar()
+                encender_una_sola_luz(luces_verdes)
                 barra_color = COLORS['accent_green']
-                # Parpadeo 10 segundos antes del cambio
-                if tiempo_restante_etapa <= (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO + 10) and tiempo_restante_etapa > (tiempo_verde + tiempo_amarillo + TIEMPO_ROJO):
+                
+                # Parpadeo 10 segundos antes
+                if tiempo_restante_etapa <= (tiempo_exposicion - tiempo_verde + 10) and \
+                   tiempo_restante_etapa > (tiempo_exposicion - tiempo_verde):
                     if not parpadeo_activo or parpadeo_luz_actual != luces_verdes[0]:
                         parpadeo_activo = True
                         parpadeo_contador = 0
@@ -1027,15 +974,13 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
+                
             elif tiempo_transcurrido_cambio < (tiempo_verde + tiempo_amarillo):  # Amarillo
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.encender()
-                for luz in luces_rojas:
-                    luz.apagar()
+                # Apagar verde antes de encender amarillo
+                encender_una_sola_luz(luces_amarillas)
                 barra_color = COLORS['accent_yellow']
-                # Parpadeo 10 segundos antes del cambio
+                
+                # Parpadeo 10 segundos antes
                 if tiempo_restante_etapa <= (TIEMPO_ROJO + 10) and tiempo_restante_etapa > TIEMPO_ROJO:
                     if not parpadeo_activo or parpadeo_luz_actual != luces_amarillas[0]:
                         parpadeo_activo = True
@@ -1048,36 +993,10 @@ def actualizar_semaforo_y_barra(tiempo_restante):
                         parpadeo_activo = False
                         parpadeo_luz_actual = None
                         parpadeo_contador = 0
-            else:  # Rojo (últimos 5 segundos)
-                for luz in luces_verdes:
-                    luz.apagar()
-                for luz in luces_amarillas:
-                    luz.apagar()
-                for luz in luces_rojas:
-                    luz.encender()
+                
+            else:  # Rojo (últimos 20 segundos)
+                encender_una_sola_luz(luces_rojas)
                 barra_color = COLORS['accent_red']
-                # Si el rojo acaba, preguntar para avanzar
-                if tiempo_restante_etapa <= 0:
-                    if etapa_actual == "exposicion":
-                        if messagebox.askyesno("Sección de preguntas", "¿Están listos para iniciar la sección de preguntas?"):
-                            etapa_actual = "preguntas"
-                            etapa_label.config(text="PREGUNTAS", fg=COLORS['accent_yellow'])
-                            remaining_time -= 1  # Avanza el tiempo para salir del rojo
-                        else:
-                            remaining_time += 1  # Espera
-                            return
-                    elif etapa_actual == "preguntas":
-                        if messagebox.askyesno("Cambio de equipo", "¿Están listos para el cambio de equipo?"):
-                            etapa_actual = "cambio"
-                            etapa_label.config(text="CAMBIO DE EQUIPO", fg=COLORS['accent_red'])
-                            remaining_time -= 1
-                        else:
-                            remaining_time += 1
-                            return
-                    elif etapa_actual == "cambio":
-                        # Fin de la sesión, cerrar ventana
-                        if ventana_visual:
-                            ventana_visual.destroy()
                 if parpadeo_activo:
                     parpadeo_activo = False
                     parpadeo_luz_actual = None
@@ -1147,7 +1066,7 @@ def reset_timer():
     running = False
     remaining_time = 0
     time_display.config(text="00:00")
-    subject_label.config(text="Evento: ")
+    subject_label.config(text="Modalidad  ")
     team_label.config(text="ID-Proyecto: ")
     team_name_var.set("")
     tema_equipo_var.set("")
@@ -1178,7 +1097,7 @@ def crear_interfaz_principal():
     frame_top.pack(pady=10)
 
     # Cambiar 'Materia' por 'Evento' y actualizar opciones
-    tk.Label(frame_top, text="Evento:", font=("Segoe UI", 14), 
+    tk.Label(frame_top, text="Modalidad ", font=("Segoe UI", 14), 
             bg=COLORS['bg_primary'], fg=COLORS['text_primary']).grid(row=0, column=0, padx=5, pady=5)
     
     subject_menu = tk.OptionMenu(frame_top, subject_var, "Informe de proyectos de investigación", "Protocolo de proyectos de investigación")
@@ -1253,26 +1172,6 @@ def aumentar_tiempo(event=None):
         # Actualizar semáforo y barra inmediatamente
         actualizar_semaforo_y_barra(remaining_time)
 
-def actualizar_leyenda_sesion(etapa):
-    if etapa == "exposicion":
-        texto = "SESIÓN DE EXPOSICIÓN"
-        color = COLORS['accent_green']
-        fuente = ("Helvetica", 12, "bold")
-    elif etapa == "preguntas":
-        texto = "SESIÓN DE PREGUNTAS"
-        color = COLORS['accent_yellow']
-        fuente = ("Helvetica", 12, "bold")
-    elif etapa == "cambio":
-        texto = "SESIÓN DE CAMBIO DE EQUIPO"
-        color = COLORS['accent_red']
-        fuente = ("Helvetica", 11, "bold")  # Más pequeño para texto largo
-    else:
-        texto = ""
-        color = COLORS['text_primary']
-        fuente = ("Helvetica", 12, "bold")
-    if ventana_visual and hasattr(ventana_visual, 'sesion_label'):
-        ventana_visual.sesion_label.config(text=texto, fg=color, font=fuente)
-
 # Modificar la parte donde se crea la interfaz principal
 if __name__ == "__main__":
     root = tk.Tk()
@@ -1286,7 +1185,7 @@ if __name__ == "__main__":
     crear_interfaz_principal()
 
     # Info
-    subject_label = tk.Label(root, text="Evento: ", 
+    subject_label = tk.Label(root, text="Modalidad  ", 
                            font=("Segoe UI", 16, "bold"), 
                            bg=COLORS['bg_primary'], 
                            fg=COLORS['text_primary'])
